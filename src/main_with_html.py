@@ -1,6 +1,5 @@
 import json
-from uuid import uuid4
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 from elasticsearch import Elasticsearch
 from datetime import datetime, timedelta
 from migration import create_cve_index
