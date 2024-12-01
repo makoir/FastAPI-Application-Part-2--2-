@@ -17,7 +17,10 @@ with open("vuln.json", "r", encoding="utf8") as f:
 @router.post("/init-db")
 def init_database():
     try:
-        client.indices.create(index="cves")
+        if not client.indices.exists(index="cves"):
+            client.indices.create(index="cves")
+        else: 
+            return "Database already exist"
         client.index(index='cves', id=1, document=vuln)
         return "Success"
     except Exception as error:
