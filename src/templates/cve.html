@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <style>
+        body { font-family: Arial; background-color: #2f2f2f; color: #99ccff; }
+        .cve { border: 1px solid #99ccff; padding: 10px; background-color: #2f2f2f; }
+    </style>
+</head>
+<body>
+    {% for i in cves %}
+    <div class="cve">
+        <p><strong>cveID:</strong> {{ i.get("cveID") }}</p>
+        <p><strong>vendorProject:</strong> {{ i.get("vendorProject") }}</p>
+        <p><strong>product:</strong> {{ i.get("product") }}</p>
+        <p><strong>vulnerabilityName:</strong> {{ i.get("vulnerabilityName") }}</p>
+        <p><strong>dateAdded:</strong> {{ i.get("dateAdded") }}</p>
+        <p><strong>shortDescription:</strong> {{ i.get("shortDescription") }}</p>
+        <p><strong>dueDate:</strong> {{ i.get("dueDate") }}</p>
+        <p><strong>knownRansomwareCampaignUse:</strong> {{ i.get("knownRansomwareCampaignUse") }}</p>
+        <p><strong>notes:</strong> {{ i.get("notes") }}</p>
+        <p><strong>cwes:</strong> {{ i.get("cwes") }}</p>
+
+    </div>
+    {% endfor %}
+</body>
+</html>
