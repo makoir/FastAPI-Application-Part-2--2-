@@ -1,5 +1,4 @@
 import json
-import requests
 from fastapi import APIRouter
 from elasticsearch import Elasticsearch
 
@@ -18,10 +17,14 @@ with open("vuln.json", "r", encoding="utf8") as f:
 def init_database():
     try:
         if not client.indices.exists(index="cves"):
-            client.indices.create(index="cves")
+            client.indices.create(index="cves", ignore=400)
         else: 
-            return "Database already exist"
-        client.index(index='cves', id=1, document=vuln)
+            return "Database already exists"
+
+        for i in vuln["vulnerabilities"]:
+            client.index(index="cves", id=i["cveID"], document=i)
+
         return "Success"
     except Exception as error:
         return error
+

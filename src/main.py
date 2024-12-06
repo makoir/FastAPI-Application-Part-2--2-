@@ -14,88 +14,105 @@ app.include_router(create_cve_index.router)
 
 index = "cves"
 
+# /info - Має виводити інформацію про додаток, вас як автора
 @app.get("/info")
 def inform():
     return {
         "author": "Marko Yavorskiy",
         "about application": "This FastAPI application pulls data from elastic database about CVEs and displays it to you."
     }
-
 # /get/all - Має виводити CVE за останні 5 днів. Максимум 40 CVE
-@app.get('/get/all/')
+@app.get("/get/all")
 def five_days_cve():
     try:
-        response = client.get(index=index, id=1)
-
         current_date = datetime.now()
         f_ago_date = current_date - timedelta(days=5)
+        query = {
+            "query": {
+                "range": {
+                    "dateAdded": {
+                        "gte": f_ago_date.isoformat() 
+                    }
+                }
+            },
+            "size": 40
+        }
 
-        f_days_cve = []
+        response = client.search(index=index, body=query)
 
-        for i in response['_source']['vulnerabilities']:
-            add_date = datetime.fromisoformat(i["dateAdded"])
-            if add_date >= f_ago_date:
-                f_days_cve.append(i)
-                
-        if f_days_cve:
-            return f_days_cve[:40]
+        if response["hits"]["total"]["value"] > 0:
+            return response["hits"]["hits"]
         else:
             return "No vulnerabilities for last 5 days"
         
     except Exception as e:
         return f"Something went wrong, problem is {e}"
-    
+
 # /get/new - Має виводити 10 найновіших CVE
 @app.get("/get/new")
 def ten_new_cve():
     try:
-        response = client.get(index=index, id=1)
+        query = {
+            "query": {
+                "match_all": {}
+            },
+            "sort": [
+                {"dateAdded": {"order": "desc"}}
+            ],
+            "size": 10
+        }
+        response = client.search(index=index, body=query)
 
-        if response['_source']['vulnerabilities']:
-            sort_response = sorted(response['_source']['vulnerabilities'], key=lambda x: x['dateAdded'])
-            return sort_response[-10:]
+        if response["hits"]["total"]["value"] > 0:
+            return response["hits"]["hits"]
         else:
-            return "No vulneabilities"
+            return "No vulnerabilities found"
         
     except Exception as e:
         return f"Something went wrong, problem is {e}"
-    
 
-# /get/critical - Має виводити 10 критичних CVE
+# /get/known - Має виводити CVE в яких knownRansomwareCampaignUse - Known, максимум 10.@app.get("/get/known")
 @app.get("/get/known")
 def critical_cve():
-    all_know_cve = []
-    
     try:
-        response = client.get(index=index, id=1)
+        query = {
+            "query": {
+                "match": {
+                    "knownRansomwareCampaignUse": "Known"
+                }
+            },
+            "size": 10
+        }
 
-        for i in response['_source']['vulnerabilities']:
-            if "Known" == i["knownRansomwareCampaignUse"]:
-                all_know_cve.append(i)
+        response = client.search(index=index, body=query)
 
-        if all_know_cve:
-            return all_know_cve[:10]
+        if response["hits"]["total"]["value"] > 0:
+            return response["hits"]["hits"]
         else:
-            return "No critical vulneabilities"
+            return "No critical vulnerabilities"
         
     except Exception as e:
         return f"Something went wrong, problem is {e}"
 
-
-# #  /get?query="key" - Має виводити CVE які містять ключове слово
+# /get?query="key" - Має виводити CVE які містять ключове слово@app.get("/get")
 @app.get("/get")
-def get_keyword_cve(query):
-    response = client.get(index=index, id=1)
+def get_keyword_cve(query: str):
+    try:
+        query_body = {
+            "query": {
+                "multi_match": {
+                    "query": query,
+                    "fields": ["shortDescription", "vulnerabilityName", "vendorProject", "product", "knownRansomwareCampaignUse"]
+                }
+            }
+        }
 
-    keyword_cve = []
+        response = client.search(index=index, body=query_body)
 
-    for i in response['_source']['vulnerabilities']:
-        if query in i["shortDescription"] or query in i["vulnerabilityName"] or query in i["vendorProject"] or query in i["product"] or query in i["knownRansomwareCampaignUse"]:
-            keyword_cve.append(i)
+        if response["hits"]["total"]["value"] > 0:
+            return response["hits"]["hits"]
+        else:
+            return "No vulnerabilities with this keyword"
 
-    if keyword_cve:
-        return keyword_cve
-    else:
-        return "No vulneabilities with this keyword"
-
-        
+    except Exception as e:
+        return f"Something went wrong, problem is {e}"
